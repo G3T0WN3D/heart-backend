@@ -228,7 +228,7 @@ app.get('/profiles', async (req, res) => {
 
     const params = [userId];
 
-    // Basis select + eerste foto
+    // Basis select + eerste foto, excl. admins
     let sql = `
       SELECT 
         u.id, u.username, u.bio, u.gender,
@@ -237,8 +237,8 @@ app.get('/profiles', async (req, res) => {
         (SELECT photo_url FROM user_photos p WHERE p.user_id = u.id LIMIT 1) AS photo
       FROM users u
       WHERE u.id <> ?
+        AND u.is_admin = FALSE
     `;
-
 
     // Filters
     if (gender) {
@@ -258,8 +258,7 @@ app.get('/profiles', async (req, res) => {
       params.push(`%${location}%`);
     }
 
-
-    // (Optioneel) exclude al geswipete profielen door deze user
+    // Exclude reeds geswipete profielen
     sql += ` AND u.id NOT IN (SELECT target_id FROM swipes WHERE swiper_id = ?)`;
     params.push(userId);
 
@@ -273,6 +272,7 @@ app.get('/profiles', async (req, res) => {
     return res.status(500).json({ message: 'Serverfout bij profielen ophalen.' });
   }
 });
+
 
 // PUT /update-profile  { userId, username, bio, gender, birthdate, location }
 app.put('/update-profile', async (req, res) => {
